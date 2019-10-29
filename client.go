@@ -22,6 +22,7 @@ func KeysFromEnvironment() *Keys {
 // Client is like http.Client, but signs all requests using Keys.
 type Client struct {
 	Keys *Keys
+	Service
 
 	// The http client to make requests with. If nil, http.DefaultClient is used.
 	Client *http.Client
@@ -45,7 +46,12 @@ func (c *Client) client() *http.Client {
 }
 
 func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
-	Sign(c.Keys, req)
+	if c.Service.Name != "" {
+		c.Service.Sign(c.Keys, req)
+	} else {
+		Sign(c.Keys, req)
+	}
+
 	return c.client().Do(req)
 }
 

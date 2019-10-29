@@ -1,13 +1,62 @@
 package aws4_test
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/bmizerany/aws4"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+
+	"github.com/go-imsto/aws4"
 )
+
+func ExampleS3() {
+	const (
+		emptySum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	)
+
+	region := os.Getenv("AWS_S3_REGION")
+	if region == "" {
+		region = "ap-northeast-1"
+	}
+	text := "hello world"
+	uri := "https://s3." + region + ".amazonaws.com/" + os.Getenv("AWS_S3_BUCKET") + "/test.txt"
+	r, _ := http.NewRequest("PUT", uri, bytes.NewBufferString(text))
+	sha256Sum := "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+	r.Header.Set("x-amz-content-sha256", sha256Sum)
+	r.Header.Set("content-type", "text/plain")
+	r.Header.Set("content-length", fmt.Sprint(len(text)))
+	resp, err := aws4.DefaultClient.Do(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var buf []byte
+	buf, _ = ioutil.ReadAll(resp.Body)
+	log.Printf("put resp(%d) %v %s", resp.StatusCode, resp.Header, buf)
+	resp.Body.Close()
+
+	r, _ = http.NewRequest("GET", uri, nil)
+	r.Header.Set("x-amz-content-sha256", emptySum)
+	resp, err = aws4.DefaultClient.Do(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+	buf, _ = ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		log.Printf("get resp %s", buf)
+	} else {
+		log.Printf("get resp %s", buf[0:8])
+	}
+	resp.Body.Close()
+
+	fmt.Println(resp.StatusCode)
+	// Output:
+	// 200
+}
 
 func Example_jSONBody() {
 	data := strings.NewReader("{}")
@@ -47,6 +96,9 @@ func ExampleSignGlacier() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var buf []byte
+	buf, _ = ioutil.ReadAll(resp.Body)
+	log.Printf("resp %s", buf)
 
 	fmt.Println(resp.StatusCode)
 	// Output:
