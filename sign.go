@@ -19,6 +19,7 @@ import (
 
 const iSO8601BasicFormat = "20060102T150405Z"
 const iSO8601BasicFormatShort = "20060102"
+const emptySum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 var lf = []byte{'\n'}
 
@@ -142,19 +143,24 @@ func (s *Service) writeHeaderList(w io.Writer, r *http.Request) {
 }
 
 func (s *Service) writeBody(w io.Writer, r *http.Request) {
-	var b []byte
 	// If the payload is empty, use the empty string as the input to the SHA256 function
 	// http://docs.amazonwebservices.com/general/latest/gr/sigv4-create-canonical-request.html
-	if r.Body == nil {
-		b = []byte("")
-	} else {
-		var err error
-		b, err = ioutil.ReadAll(r.Body)
-		if err != nil {
-			panic(err)
-		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+	if v := r.Header.Get("x-amz-content-sha256"); v != "" {
+		fmt.Fprint(w, v)
+		return
 	}
+	if r.Body == nil {
+		fmt.Fprint(w, emptySum)
+		return
+	}
+
+	var b []byte
+	var err error
+	b, err = ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 
 	h := sha256.New()
 	h.Write(b)
