@@ -8,9 +8,10 @@ import (
 	"strings"
 )
 
+// DefaultClient ...
 var DefaultClient = &Client{Keys: KeysFromEnvironment()}
 
-// Initializes and returns a Keys using the AWS_ACCESS_KEY and AWS_SECRET_KEY
+// KeysFromEnvironment Initializes and returns a Keys using the AWS_ACCESS_KEY and AWS_SECRET_KEY
 // environment variables.
 func KeysFromEnvironment() *Keys {
 	return &Keys{

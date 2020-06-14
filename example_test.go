@@ -14,9 +14,6 @@ import (
 )
 
 func ExampleS3() {
-	const (
-		emptySum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	)
 
 	region := os.Getenv("AWS_S3_REGION")
 	if region == "" {
@@ -40,7 +37,7 @@ func ExampleS3() {
 	resp.Body.Close()
 
 	r, _ = http.NewRequest("GET", uri, nil)
-	r.Header.Set("x-amz-content-sha256", emptySum)
+	r.Header.Set("x-amz-content-sha256", aws4.EmptySum)
 	resp, err = aws4.DefaultClient.Do(r)
 	if err != nil {
 		log.Fatal(err)

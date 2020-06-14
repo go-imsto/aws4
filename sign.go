@@ -17,9 +17,12 @@ import (
 	"time"
 )
 
-const iSO8601BasicFormat = "20060102T150405Z"
-const iSO8601BasicFormatShort = "20060102"
-const emptySum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+// consts
+const (
+	ISO8601BasicFormat      = "20060102T150405Z"
+	ISO8601BasicFormatShort = "20060102"
+	EmptySum                = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+)
 
 var lf = []byte{'\n'}
 
@@ -30,7 +33,7 @@ type Keys struct {
 }
 
 func (k *Keys) sign(s *Service, t time.Time) []byte {
-	h := ghmac([]byte("AWS4"+k.SecretKey), []byte(t.Format(iSO8601BasicFormatShort)))
+	h := ghmac([]byte("AWS4"+k.SecretKey), []byte(t.Format(ISO8601BasicFormatShort)))
 	h = ghmac(h, []byte(s.Region))
 	h = ghmac(h, []byte(s.Name))
 	h = ghmac(h, []byte("aws4_request"))
@@ -70,7 +73,7 @@ func (s *Service) Sign(keys *Keys, r *http.Request) error {
 			return err
 		}
 	}
-	r.Header.Set("Date", t.Format(iSO8601BasicFormat))
+	r.Header.Set("Date", t.Format(ISO8601BasicFormat))
 
 	k := keys.sign(s, t)
 	h := hmac.New(sha256.New, k)
@@ -129,7 +132,7 @@ func (s *Service) writeHeader(w io.Writer, r *http.Request) {
 
 func (s *Service) writeHeaderList(w io.Writer, r *http.Request) {
 	i, a := 0, make([]string, len(r.Header))
-	for k, _ := range r.Header {
+	for k := range r.Header {
 		a[i] = strings.ToLower(k)
 		i++
 	}
@@ -150,7 +153,7 @@ func (s *Service) writeBody(w io.Writer, r *http.Request) {
 		return
 	}
 	if r.Body == nil {
-		fmt.Fprint(w, emptySum)
+		fmt.Fprint(w, EmptySum)
 		return
 	}
 
@@ -200,7 +203,7 @@ func (s *Service) writeRequest(w io.Writer, r *http.Request) {
 func (s *Service) writeStringToSign(w io.Writer, t time.Time, r *http.Request) {
 	w.Write([]byte("AWS4-HMAC-SHA256"))
 	w.Write(lf)
-	w.Write([]byte(t.Format(iSO8601BasicFormat)))
+	w.Write([]byte(t.Format(ISO8601BasicFormat)))
 	w.Write(lf)
 
 	w.Write([]byte(s.creds(t)))
@@ -212,7 +215,7 @@ func (s *Service) writeStringToSign(w io.Writer, t time.Time, r *http.Request) {
 }
 
 func (s *Service) creds(t time.Time) string {
-	return t.Format(iSO8601BasicFormatShort) + "/" + s.Region + "/" + s.Name + "/aws4_request"
+	return t.Format(ISO8601BasicFormatShort) + "/" + s.Region + "/" + s.Name + "/aws4_request"
 }
 
 func ghmac(key, data []byte) []byte {
